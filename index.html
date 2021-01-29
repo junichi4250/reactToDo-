@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>React Todo App</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+
+    <!-- Don't use this in production: -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        (() => {
+            // stateの値を定義
+            const todos = [
+                { id: 0, title: 'Task 0', isDone: false },
+                { id: 1, title: 'Task 1', isDone: false },
+                { id: 2, title: 'Task 2', isDone: true },
+            ];
+
+
+            // TodoListのコンポーネント
+            function TodoItem(props) {
+                return (
+                    <li key={props.todo.id}>
+                        <label>
+                            <input type="checkbox"
+                                checked={props.todo.isDone}
+                                // 無名関数で値を渡す
+                                onChange={() => props.checkTodo(props.todo)}
+                            />
+                        </label>
+                        <span className="cmd" onClick={() =>
+                            props.deleteTodo(props.todo)}>[x]</span>
+                    </li>
+                );
+            }
+
+            // stateを扱わないときは関数が使える
+            function TodoList(props) {
+                const todos = props.todos.map(todo => {
+                    return (
+                        // listにはkey属性にユニークな値を持たせる決まりがある
+                        <TodoItem
+                            key={todo.id}
+                            todo={todo}
+                            checkTodo={props.checkTodo}
+                            deleteTodo={props.deleteTodo}
+                        />
+                    );
+                });
+                return (
+                    <ul>
+                        {props.todos.length ? todos : <li>Nothing to do!</li>}
+                    </ul>
+                );
+            }
+
+
+            // 初めてのクラス作成
+            class App extends React.Component {
+                constructor() {
+                    // 必ずsuperを呼ぶ
+                    super();
+                    this.state = {
+                        todos: todos
+                    };
+                    // this.checkTodoにこのクラス自体をbindする
+                    this.checkTodo = this.checkTodo.bind(this);
+                    this.deleteTodo = this.deleteTodo.bind(this);
+                }
+
+                // checkTodoメソッドの実装
+                checkTodo(todo) {
+                    // todosのコピーを作る
+                    const todos = this.state.todos.map(todo => {
+                        return { id: todo.id, title: todo.title, isDone: todo.isDone };
+                    });
+
+                    // 何番目の要素のisDoneを変更するかを調べる
+                    // indexOfでtodo.id(引数のtodo)が入っている配列のインデックスが得られる
+                    const pos = this.state.todos.map(todo => {
+                        return todo.id;
+                    }).indexOf(todo.id);
+
+                    // todosのpos番目のisDoneを反転
+                    todos[pos].isDone = !todos[pos].isDone;
+                    this.setState({
+                        todos: todos
+                    });
+                }
+
+                // deleteTodoメソッドの実装
+                deleteTodo(todo) {
+                    if (!confirm('are you sure?')) {
+                        return;
+                    }
+                    // todosのコピーを作る
+                    // オブジェクトを扱わないのでsliceでよい
+                    const todos = this.state.todos.slice()
+
+                    // 何番目の要素のtodoを削除するか調べる
+                    const pos = this.state.todos.indexOf(todo);
+
+                    // pos番目の要素を削除
+                    todos.splice(pos, 1);
+                    // 状態の更新
+                    this.setState({
+                        todos: todos
+                    });
+                }
+
+                render() {
+                    return (
+                        <div className="container">
+                            <h1>My Todos</h1>
+                            <TodoList
+                                todos={this.state.todos}
+                                checkTodo={this.checkTodo}
+                                deleteTodo={this.deleteTodo}
+                            />
+                        </div>
+                    );
+                }
+            }
+            // 元となる定型文
+            ReactDOM.render(
+                <App />,
+                document.getElementById('root')
+            );
+        })();
+    </script>
+</body>
+
+</html>
