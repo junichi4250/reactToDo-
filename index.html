@@ -17,12 +17,23 @@
     <script type="text/babel">
         (() => {
             // stateの値を定義
-            const todos = [
-                { id: 0, title: 'Task 0', isDone: false },
-                { id: 1, title: 'Task 1', isDone: false },
-                { id: 2, title: 'Task 2', isDone: true },
-            ];
+            const todos = [];
 
+            // TodoHeaderコンポーネント
+            function TodoHeader(props) {
+                // 完了した数
+                const remaining = props.todos.filter(todo => {
+                    return !todo.isDone;
+                });
+
+                return (
+                    <h1>
+                        <button onClick={props.purge}>Purge</button>
+                        MyTodos
+                        <span>({remaining.length}/{props.todos.length})</span>
+                    </h1>
+                );
+            }
 
             // TodoListのコンポーネント
             function TodoItem(props) {
@@ -34,6 +45,9 @@
                                 // 無名関数で値を渡す
                                 onChange={() => props.checkTodo(props.todo)}
                             />
+                            <span className={props.todo.isDone ? 'done' : ''}>
+                                {props.todo.title}
+                            </span>
                         </label>
                         <span className="cmd" onClick={() =>
                             props.deleteTodo(props.todo)}>[x]</span>
@@ -61,6 +75,21 @@
                 );
             }
 
+            // Todo追加Form
+            function TodoForm(props) {
+                return (
+                    // addボタンを押したときにformの中身が追加される
+                    <form onSubmit={props.addTodo}>
+                        <input type="text" value={props.item} onChange={props.updateItem} />
+                        <input type="submit" value="add" />
+                    </form>
+                );
+            }
+
+            // ユニークなidの生成
+            function getUniqueId() {
+                return new Date().getTime().toString(36) + '-' + Math.random().toString(36);
+            }
 
             // 初めてのクラス作成
             class App extends React.Component {
@@ -68,11 +97,15 @@
                     // 必ずsuperを呼ぶ
                     super();
                     this.state = {
-                        todos: todos
+                        todos: todos,
+                        item: '',
                     };
                     // this.checkTodoにこのクラス自体をbindする
                     this.checkTodo = this.checkTodo.bind(this);
                     this.deleteTodo = this.deleteTodo.bind(this);
+                    this.updateItem = this.updateItem.bind(this);
+                    this.addTodo = this.addTodo.bind(this);
+                    this.purge = this.purge.bind(this);
                 }
 
                 // checkTodoメソッドの実装
@@ -115,14 +148,82 @@
                     });
                 }
 
+                // updateItemメソッドの実装
+                // formの値はeventオブジェクトから取得できる
+                updateItem(e) {
+                    this.setState({
+                        item: e.target.value
+                    });
+                }
+
+                // addTodoメソッドの実装
+                addTodo(e) {
+                    e.preventDefault();
+
+                    // formの値が空の時処理をしない
+                    if (this.state.item.trim() === '') {
+                        return;
+                    }
+
+                    const item = {
+                        // ユニークなidを生成
+                        id: getUniqueId(),
+                        title: this.state.item,
+                        isDone: false
+                    };
+
+                    // todosのコピーを作る
+                    const todos = this.state.todos.slice();
+                    // todosにitemを追加
+                    todos.push(item);
+                    this.setState({
+                        todos: todos,
+                        // 送信後formの値を空にする
+                        item: ''
+                    });
+                }
+
+                purge() {
+                    if (!confirm('are you sure?')) {
+                        return;
+                    }
+                    // todosのコピーからisDoneがfalseを抜き出す
+                    const todos = this.state.todos.filter(todo => {
+                        return !todo.isDone;
+                    });
+                    // isDoneがfalseのtodosをセット
+                    this.setState({
+                        todos: todos
+                    });
+                }
+
+                // データの永続化
+                componentDidUpdate() {
+                    localStorage.setItem('todos', JSON.stringify(this.state.todos));
+                }
+
+                componentDidMount() {
+                    this.setState({
+                        todos: JSON.parse(localStorage.getItem('todos')) || []
+                    });
+                }
+
                 render() {
                     return (
                         <div className="container">
-                            <h1>My Todos</h1>
+                            <TodoHeader
+                                todos={this.state.todos}
+                                purge={this.purge}
+                            />
                             <TodoList
                                 todos={this.state.todos}
                                 checkTodo={this.checkTodo}
                                 deleteTodo={this.deleteTodo}
+                            />
+                            <TodoForm
+                                item={this.state.item}
+                                updateItem={this.updateItem}
+                                addTodo={this.addTodo}
                             />
                         </div>
                     );
