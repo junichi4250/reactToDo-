@@ -1,2 +1,4 @@
-# reactToDo-
-react propやstateを使った練習(基礎)
+# reactToDoApp
+react  
+propやstateを使った練習  
+追加、削除機能あり
